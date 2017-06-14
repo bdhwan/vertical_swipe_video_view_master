@@ -3,7 +3,11 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/easing_helper/easing_helper.iml" filepath="$PROJECT_DIR$/easing_helper/easing_helper.iml" />
       <module fileurl="file://$PROJECT_DIR$/vertical_swipe_video_view/vertical_swipe_video_view.iml" filepath="$PROJECT_DIR$/vertical_swipe_video_view/vertical_swipe_video_view.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vertical_swipe_video_view/vertical_swipe_video_view.iml" filepath="$PROJECT_DIR$/vertical_swipe_video_view/vertical_swipe_video_view.iml" />
+      <module fileurl="file://$PROJECT_DIR$/vertical_swipe_video_view_master.iml" filepath="$PROJECT_DIR$/vertical_swipe_video_view_master.iml" />
       <module fileurl="file://$PROJECT_DIR$/vertical_swipe_video_view_master.iml" filepath="$PROJECT_DIR$/vertical_swipe_video_view_master.iml" />
     </modules>
   </component>

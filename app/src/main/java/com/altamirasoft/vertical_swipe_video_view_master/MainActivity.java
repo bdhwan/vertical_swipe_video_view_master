@@ -2,7 +2,11 @@ package com.altamirasoft.vertical_swipe_video_view_master;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
 
+import com.altamirasoft.vertical_swipe_video_view.VerticalSwipeVideoListDataProvider;
+import com.altamirasoft.vertical_swipe_video_view.VerticalSwipeVideoListListener;
 import com.altamirasoft.vertical_swipe_video_view.VerticalSwipeVideoListView;
 
 public class MainActivity extends AppCompatActivity {
@@ -68,5 +72,36 @@ public class MainActivity extends AppCompatActivity {
 
         videoListView = (VerticalSwipeVideoListView)findViewById(R.id.videoListView);
 
+
+        videoListView.setDataProvider(new VerticalSwipeVideoListDataProvider() {
+            @Override
+            public String getVideoUrl(int position) {
+                return videoUrl[position];
+            }
+
+            @Override
+            public String getPreviewUrl(int position) {
+                return videoPreviewUrl[position];
+            }
+
+            @Override
+            public int getTotalVideoCount() {
+                return videoUrl.length;
+            }
+        });
+
+
+        videoListView.setListener(new VerticalSwipeVideoListListener() {
+            @Override
+            public void onSelectVideo(int position) {
+                Log.d("log","onSelectVideo = "+position);
+
+            }
+        });
+
+    }
+
+    public void clickTest(View v){
+        videoListView.setPosition(6);
     }
 }

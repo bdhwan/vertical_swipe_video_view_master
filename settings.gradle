@@ -1,1 +1,1 @@
-include ':app', ':vertical_swipe_video_view'
+include ':app', ':vertical_swipe_video_view', ':easing_helper'

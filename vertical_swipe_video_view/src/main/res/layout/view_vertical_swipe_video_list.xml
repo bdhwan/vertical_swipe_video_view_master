@@ -3,29 +3,34 @@
     android:layout_width="match_parent" android:layout_height="match_parent">
 
 
-
     <ImageView
         android:id="@+id/imageTop"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        />
 
     <ImageView
         android:id="@+id/imageCenter"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:scaleType="fitCenter"
+        />
 
     <ImageView
         android:id="@+id/imageBottom"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="#ff0000"
+        android:scaleType="fitCenter"
         />
+
 
     <VideoView
         android:id="@+id/videoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="40dp"
+        android:layout_centerInParent="true"
         />
 
 

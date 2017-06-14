@@ -1,5 +1,6 @@
 package com.altamirasoft.vertical_swipe_video_view;
 
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.graphics.Color;
 import android.media.MediaPlayer;
@@ -8,18 +9,22 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.VideoView;
 
 import com.altamirasoft.easing_helper.EasingHelper;
 import com.altamirasoft.easing_helper.EasingUpdateListener;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.MemoryCategory;
+import com.bumptech.glide.annotation.GlideModule;
+
 
 /**
  * Created by bdhwan on 2017. 6. 14..
  */
-
-public class VerticalSwipeVideoListView extends RelativeLayout implements View.OnTouchListener{
+public class VerticalSwipeVideoListView extends RelativeLayout implements View.OnTouchListener,MediaPlayer.OnPreparedListener,MediaPlayer.OnCompletionListener {
 
 
 
@@ -40,7 +45,10 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
     EasingHelper helper;
 
 
+    int beforePostion;
     int position;
+    int tPosition;
+
 
     int totalCount = 10;
 
@@ -51,6 +59,7 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
     public VerticalSwipeVideoListView(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.context = context;
+
         String service = Context.LAYOUT_INFLATER_SERVICE;
         final LayoutInflater li = (LayoutInflater) context.getSystemService(service);
         li.inflate(R.layout.view_vertical_swipe_video_list, this, true);
@@ -60,14 +69,14 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
 
         videoView = (VideoView)findViewById(R.id.videoView);
 
-        imageViews[0].setBackgroundColor(Color.BLUE);
-        imageViews[1].setBackgroundColor(Color.RED);
-        imageViews[2].setBackgroundColor(Color.YELLOW);
+        imageViews[0].setBackgroundColor(Color.BLACK);
+        imageViews[1].setBackgroundColor(Color.BLACK);
+        imageViews[2].setBackgroundColor(Color.BLACK);
 
         tracker = new VelocityTracker();
         setOnTouchListener(this);
 
-        helper = new EasingHelper().setEasing(0.6f);
+        helper = new EasingHelper().setEasing(0.5f);
         helper.addUpdateListener(new EasingUpdateListener() {
             @Override
             public void onUpdateCurrentValue(float value) {
@@ -79,24 +88,27 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
             public void onFinishUpdateValue(float value) {
                 currentTranslationY = value;
                 isAnimating = false;
-                position += endPlusPosition;
+                position = getCurrentPosition();
                 Log.d("log","after position = "+position+", ty = "+currentTranslationY);
+                invalidateView();
+                invalidateData();
+
+                if(listener!=null){
+                    listener.onSelectVideo(position);
+                }
+
             }
         });
 
-
-        videoView.setVideoPath("https://d3egch4vj9g9yc.cloudfront.net/donut/2017060908/sample21_L2.mp4");
-        videoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-            @Override
-            public void onCompletion(MediaPlayer mp) {
-                videoView.start();
-            }
-        });
+        videoView.setOnPreparedListener(this);
+        videoView.setOnCompletionListener(this);
         videoView.start();
 
         helper.start();
 
         position = 0;
+        tPosition = 0;
+        beforePostion =-1;
     }
 
     public void setDataProvider(VerticalSwipeVideoListDataProvider dataProvider){
@@ -108,6 +120,21 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
         this.listener = listener;
     }
 
+
+    public void setPosition(int position){
+
+        this.position = position;
+        invalidateData();
+
+        tPosition = position;
+        currentTranslationY = tPosition*-height;
+        helper.setTargetValue(currentTranslationY,false);
+        helper.setCurrentValue(currentTranslationY,false);
+        invalidateView();
+
+    }
+
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -115,6 +142,7 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
         this.width = w;
         this.height = h;
         initView();
+
     }
 
     private void initView() {
@@ -133,13 +161,12 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
         videoParam.height = height;
         videoView.setLayoutParams(videoParam);
 
-
         initPosition[0] = 0;
         initPosition[1] = height;
         initPosition[2] = height*2;
 
         invalidateView();
-
+        invalidateData();
     }
 
 
@@ -157,7 +184,7 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
         float currentX = event.getRawX();
         float currentY = event.getRawY();
 
-        if(isAnimating)return false;
+
         if (action == MotionEvent.ACTION_DOWN) {
             Log.d("log","down");
             tracker.resetValue(currentX, currentY);
@@ -165,6 +192,10 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
             beforeY = currentY;
             endPlusPosition = 0;
             helper.pause();
+
+            position = getCurrentPosition();
+            invalidateView();
+            invalidateData();
 //            Log.d("log","before position = "+position);
             return true;
         } else if (action == MotionEvent.ACTION_MOVE) {
@@ -172,9 +203,7 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
             float dx = currentX - beforeX;
             float dy = currentY - beforeY;
 
-            if(tracker.getCheckCount()<5){
-                return true;
-            }
+
             currentTranslationY = currentTranslationY+dy;
             invalidateView();
 
@@ -185,38 +214,48 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
         } else if (action == MotionEvent.ACTION_UP) {
 
             float lastVY = tracker.getLastVelocityY(5);
-            isAnimating = true;
-            helper.setCurrentValue(currentTranslationY);
-//            Log.d("log","track cound = "+tracker.getCheckCount());
+            final float tempCurrent = currentTranslationY;
+            helper.setCurrentValue(tempCurrent,false);
+            helper.setTargetValue(tempCurrent,false);
+
             if (Math.abs(lastVY) < 2) {
-                helper.setTargetValue(position*height);
+
             } else {
                 if (lastVY < 0) {
                     //bottom
-                    if(position>=totalCount-1){
-                        helper.setTargetValue(position*-height);
+                    if(tPosition>=totalCount-1){
+
                     }
                     else{
-                        helper.setTargetValue((position+1)*-height);
-                        position++;
+                        ++tPosition;
                     }
 
                 } else {
                    //top
                     //bottom
-                    if(position<=0){
-                        helper.setTargetValue(position*-height);
+                    if(tPosition<=0){
                     }
                     else{
-                        helper.setTargetValue((position-1)*-height);
-                        position--;
+                        --tPosition;
                     }
                 }
             }
+            helper.setTargetValue(tPosition*-height,false);
+            helper.start();
             return true;
         }
         return false;
     }
+
+
+    public int getCurrentPosition(){
+        int result = (int) ((-currentTranslationY+height/2)/height);
+        if(result>totalCount-1){
+            result = totalCount -1;
+        }
+        return result;
+    }
+
 
 
 
@@ -229,8 +268,59 @@ public class VerticalSwipeVideoListView extends RelativeLayout implements View.O
             }
             imageViews[i].setTranslationY(target);
         }
+        videoView.setTranslationY(imageViews[position%3].getTranslationY());
+    }
 
 
-        videoView.setTranslationY(currentTranslationY%height);
+    public void invalidateData(){
+
+        if(dataProvider!=null){
+            if(beforePostion!=position){
+                videoView.pause();
+                videoView.setAlpha(0f);
+                videoView.setVideoPath(dataProvider.getVideoUrl(position));
+
+                for(int i =0;i<3;i++){
+                    imageViews[i].setAlpha(1f);
+                    Glide.with(context).clear(imageViews[i]);
+                    imageViews[i].setImageResource(R.drawable.transparent);
+                    imageViews[i].setAlpha(1f);
+
+                }
+                if(position>1){
+                   Glide.with(context).load(dataProvider.getPreviewUrl(position-1)).into(imageViews[(position-1)%3]);
+                }
+                Glide.with(context).load(dataProvider.getPreviewUrl(position)).into(imageViews[position%3]);
+                if(position<totalCount-1){
+                    Glide.with(context).load(dataProvider.getPreviewUrl(position+1)).into(imageViews[(position+1)%3]);
+                }
+            }
+            beforePostion = position;
+        }
+
+
+    }
+
+
+    @Override
+    public void onCompletion(MediaPlayer mp) {
+        mp.start();
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer mp) {
+        videoView.setAlpha(1f);
+        videoView.start();
+
+        if(position>1){
+            imageViews[(position-1)%3].setAlpha(1f);
+        }
+
+        Glide.with(context).clear(imageViews[position%3]);
+        imageViews[position%3].setImageResource(R.drawable.transparent);
+
+        if(position<totalCount-1){
+            imageViews[(position+1)%3].setAlpha(1f);
+        }
     }
 }
